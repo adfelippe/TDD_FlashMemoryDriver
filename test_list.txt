@@ -1,0 +1,8 @@
+# Flash Memory Driver Test List
+
+- Succesful operation
+- Invalid programming voltage
+- Program error
+- Attempt to program protected block
+- Read back fails
+- Device timeout during write operaion
