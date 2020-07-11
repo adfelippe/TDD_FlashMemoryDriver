@@ -28,6 +28,29 @@ int8_t Flash_Write(ioAddress address, ioData data)
     return FLASH_SUCCESS;
 }
 
+ioData Flash_Query_CFI(ioAddress queryOffset)
+{
+    IO_Write(COMMAND_REGISTER, READ_CFI_QUERY_COMMAND);
+    return IO_Read(queryOffset);
+}
+
+ioData Flash_CFIQuery_GetManufacturerData(void)
+{
+    return Flash_Query_CFI(CFI_MANUFACTURER_CODE_OFFSET);
+}
+
+void Flash_CFIQuery_GetQueryUniqueString(ioData *string)
+{
+    string[0] = Flash_Query_CFI(CFI_QUERY_UNIQUE_STRING_1_OFFSET);
+    string[1] = Flash_Query_CFI(CFI_QUERY_UNIQUE_STRING_2_OFFSET);
+    string[2] = Flash_Query_CFI(CFI_QUERY_UNIQUE_STRING_3_OFFSET);
+}
+
+ioData Flash_CFIQuery_GetVddLogicSupplyMinimumVoltage(void)
+{
+    return Flash_Query_CFI(CFI_VDD_LOGIC_SUPPLY_MIN_VOLTAGE_OFFSET);
+}
+
 static int8_t writeError(ioData status)
 {
     IO_Write(COMMAND_REGISTER, RESET_COMMAND);

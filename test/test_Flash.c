@@ -19,6 +19,12 @@ void tearDown(void)
 {
 }
 
+void sendCFIQueryCommand(ioAddress offset, ioData expectedData)
+{
+    IO_Write_Expect(COMMAND_REGISTER, 0x98);
+    IO_Read_ExpectAndReturn(offset, expectedData);
+}
+
 void test_Flash_WriteSuceeds_ReadyImmediately(void)
 {
     int result = 0;
@@ -136,5 +142,57 @@ void test_Flash_TimeoutAtEndOfTime(void)
     for (int i = 0; i < 10; i++)
         IO_Read_ExpectAndReturn(STATUS_REGISTER, ~READY_BIT);
 
-    result = Flash_Write(address, data);    
+    result = Flash_Write(address, data);
+
+    TEST_ASSERT_EQUAL(FLASH_TIMEOUT_ERROR, result);
+}
+
+void test_Flash_FlashQueryCFIReturnsCorrectly(void)
+{
+    sendCFIQueryCommand(0x00, 0x0020);
+
+    result = Flash_Query_CFI(CFI_MANUFACTURER_CODE_OFFSET);
+
+    TEST_ASSERT_EQUAL(CFI_MANUFACTURER_CODE_DATA, result);
+}
+
+void test_Flash_CFIQuery_GetManufacturerDataSucceeds(void)
+{
+    sendCFIQueryCommand(0x00, 0x0020);
+
+    result = Flash_CFIQuery_GetManufacturerData();
+
+    TEST_ASSERT_EQUAL(CFI_MANUFACTURER_CODE_DATA, result);
+}
+
+void test_Flash_CFIQuery_GetManufacturerDataFailsIfWrongOffset(void)
+{
+    sendCFIQueryCommand(0x00, 0x0021);
+
+    result = Flash_CFIQuery_GetManufacturerData();
+
+    TEST_ASSERT_NOT_EQUAL(CFI_MANUFACTURER_CODE_DATA, result);
+}
+
+void test_Flash_CFIQuery_GetQueryUniqueStringSucceeds(void)
+{
+    ioData uniqueASCIIString[4] = {'\0', '\0', '\0', '\0'};
+    sendCFIQueryCommand(0x10, 0x0051);
+    sendCFIQueryCommand(0x11, 0x0052);
+    sendCFIQueryCommand(0x12, 0x0059);
+
+    Flash_CFIQuery_GetQueryUniqueString(uniqueASCIIString);
+
+    TEST_ASSERT_EQUAL(CFI_QUERY_UNIQUE_STRING_1_DATA, uniqueASCIIString[0]);
+    TEST_ASSERT_EQUAL(CFI_QUERY_UNIQUE_STRING_2_DATA, uniqueASCIIString[1]);
+    TEST_ASSERT_EQUAL(CFI_QUERY_UNIQUE_STRING_3_DATA, uniqueASCIIString[2]);
+}
+
+void test_Flash_CFIQuery_GetVddLogicSupplyMinimumVoltageSucceeds(void)
+{
+    sendCFIQueryCommand(0x1B, 0x0027);
+
+    result = Flash_CFIQuery_GetVddLogicSupplyMinimumVoltage();
+
+    TEST_ASSERT_EQUAL(CFI_VDD_LOGIC_SUPPLY_MIN_VOLTAGE_DATA, result);
 }

@@ -7,12 +7,24 @@
 #define COMMAND_REGISTER                        0x0
 #define STATUS_REGISTER                         0x0
 #define PROGRAMM_COMMAND                        0x40
+#define READ_CFI_QUERY_COMMAND                  0x98
 #define RESET_COMMAND                           0xFF
 #define READY_BIT                               (1 << 7)
 #define PROGRAM_ERROR_BIT                       (1 << 4)
 #define VPP_ERROR_BIT                           (1 << 3)
 #define PROTECTED_BLOCK_BIT                     (1 << 1)
 #define FLASH_WRITE_TIMEOUT_IN_MICROSECONDS     5000
+
+#define CFI_MANUFACTURER_CODE_OFFSET            0x00
+#define CFI_MANUFACTURER_CODE_DATA              0x0020
+#define CFI_QUERY_UNIQUE_STRING_1_OFFSET        0x10
+#define CFI_QUERY_UNIQUE_STRING_2_OFFSET        0x11
+#define CFI_QUERY_UNIQUE_STRING_3_OFFSET        0x12
+#define CFI_QUERY_UNIQUE_STRING_1_DATA          0x0051
+#define CFI_QUERY_UNIQUE_STRING_2_DATA          0x0052
+#define CFI_QUERY_UNIQUE_STRING_3_DATA          0x0059
+#define CFI_VDD_LOGIC_SUPPLY_MIN_VOLTAGE_OFFSET 0x1B
+#define CFI_VDD_LOGIC_SUPPLY_MIN_VOLTAGE_DATA   0x0027
 
 enum
 {
@@ -25,7 +37,14 @@ enum
     FLASH_UNKNOWN_PROGRAM_ERROR = -6
 };
 
+enum { EMPTY_CFI_FLASH_QUERY_DATA = 0 };
+
 
 int8_t Flash_Write(ioAddress addr, ioData data);
+ioData Flash_Query_CFI(ioAddress addr);
+ioData Flash_CFIQuery_GetManufacturerData(void);
+void Flash_CFIQuery_GetQueryUniqueString(ioData *string);
+ioData Flash_CFIQuery_GetVddLogicSupplyMinimumVoltage(void);
+
 
 #endif // FLASH_H
