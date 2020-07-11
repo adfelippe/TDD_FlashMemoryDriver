@@ -125,3 +125,16 @@ void test_Flash_WriteFails_Timeout(void)
 
     TEST_ASSERT_EQUAL(FLASH_TIMEOUT_ERROR, result);
 }
+
+void test_Flash_TimeoutAtEndOfTime(void)
+{
+    FakeMicroTime_Init(0xFFFFFFFF, 500);
+
+    IO_Write_Expect(COMMAND_REGISTER, PROGRAMM_COMMAND);
+    IO_Write_Expect(address, data);
+
+    for (int i = 0; i < 10; i++)
+        IO_Read_ExpectAndReturn(STATUS_REGISTER, ~READY_BIT);
+
+    result = Flash_Write(address, data);    
+}
