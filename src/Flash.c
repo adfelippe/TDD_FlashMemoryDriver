@@ -1,8 +1,12 @@
+#include <stdbool.h>
 #include "Flash.h"
 #include "MicroTime.h"
 
 
 static int8_t writeError(ioData status);
+static void resetAndReadDummyData(void);
+static bool isTimeoutReached(uint32_t startTime);
+static int8_t eraseStatus(ioData status);
 
 
 int8_t Flash_Write(ioAddress address, ioData data)
@@ -15,7 +19,7 @@ int8_t Flash_Write(ioAddress address, ioData data)
 
     while ((status & READY_BIT) == 0) {
         status = IO_Read(STATUS_REGISTER);
-        if (MicroTime_Get() - timestamp >= FLASH_WRITE_TIMEOUT_IN_MICROSECONDS)
+        if ((isTimeoutReached(timestamp)))
             return FLASH_TIMEOUT_ERROR;
     }
 
@@ -26,6 +30,23 @@ int8_t Flash_Write(ioAddress address, ioData data)
         return FLASH_READ_BACK_ERROR;
 
     return FLASH_SUCCESS;
+}
+
+int8_t Flash_EraseSupendAndResume(void)
+{
+    ioData status = 0;
+    uint32_t timestamp = MicroTime_Get();
+
+    IO_Write(COMMAND_REGISTER, PROGRAM_ERASE_SUSPEND_COMMAND);
+    IO_Write(COMMAND_REGISTER, READ_STATUS_REGISTER);
+
+    while ((status & READY_BIT) == 0) {
+        status = IO_Read(STATUS_REGISTER);
+        if (isTimeoutReached(timestamp))
+            return FLASH_TIMEOUT_ERROR;
+    }
+
+    return eraseStatus(status);
 }
 
 ioData Flash_Query_CFI(ioAddress queryOffset)
@@ -63,4 +84,27 @@ static int8_t writeError(ioData status)
         return FLASH_PROTECTED_BLOCK_ERROR;
     else
         return FLASH_UNKNOWN_PROGRAM_ERROR;
+}
+
+static void resetAndReadDummyData(void)
+{
+    IO_Write(COMMAND_REGISTER, RESET_COMMAND);
+    IO_Read(DUMMY_ADDRESS);
+}
+
+static bool isTimeoutReached(uint32_t startTime)
+{
+    return (MicroTime_Get() - startTime >= FLASH_WRITE_TIMEOUT_IN_MICROSECONDS);
+}
+
+static int8_t eraseStatus(ioData status)
+{
+    if ((status & ERASE_COMPLETE_BIT) == 0) {
+        resetAndReadDummyData();
+        return FLASH_ERASE_COMPLETE;
+    } else {
+        resetAndReadDummyData();
+        IO_Write(COMMAND_REGISTER, ERASE_CONFIRM_COMMAND);
+        return FLASH_ERASE_CONTINUES;
+    }
 }

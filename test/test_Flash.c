@@ -147,6 +147,50 @@ void test_Flash_TimeoutAtEndOfTime(void)
     TEST_ASSERT_EQUAL(FLASH_TIMEOUT_ERROR, result);
 }
 
+void test_Flash_EraseSuspendSucceedsImmediatelyWhenEraseComplete(void)
+{
+    IO_Write_Expect(0x0, 0xB0);
+    IO_Write_Expect(0x0, 0x70);
+
+    IO_Read_ExpectAndReturn(0x00, 1 << 7);
+
+    IO_Write_Expect(0x0, 0xFF);
+    IO_Read_ExpectAndReturn(0xA5, 0xA5);
+
+    result = Flash_EraseSupendAndResume();
+
+    TEST_ASSERT_EQUAL(FLASH_ERASE_COMPLETE, result);
+}
+
+void test_Flash_EraseSuspendSucceedsImmediatelyWhenEraseContinues(void)
+{
+    IO_Write_Expect(0x0, 0xB0);
+    IO_Write_Expect(0x0, 0x70);
+
+    IO_Read_ExpectAndReturn(0x00, (1 << 7 | 1 << 6));
+
+    IO_Write_Expect(0x0, 0xFF);
+    IO_Read_ExpectAndReturn(0xA5, 0xA5);
+    IO_Write_Expect(0x0, 0xD0);
+
+    result = Flash_EraseSupendAndResume();
+
+    TEST_ASSERT_EQUAL(FLASH_ERASE_CONTINUES, result);
+}
+
+void test_Flash_EraseSuspendFailsTimeout(void)
+{
+    IO_Write_Expect(0x0, 0xB0);
+    IO_Write_Expect(0x0, 0x70);
+
+    for (int i = 0; i < 10; i++)
+        IO_Read_ExpectAndReturn(0x00, ~(1 << 7));
+
+    result = Flash_EraseSupendAndResume();
+
+    TEST_ASSERT_EQUAL(FLASH_TIMEOUT_ERROR, result);
+}
+
 void test_Flash_FlashQueryCFIReturnsCorrectly(void)
 {
     sendCFIQueryCommand(0x00, 0x0020);
